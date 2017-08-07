@@ -85,12 +85,12 @@ func (me *QueueDB) UpsertJob(partition, queue, jobid, value string) {
 }
 
 func (me *QueueDB) ListJobs(partition, queue, start string, n int) []*core.Job {
-	query := `SELECT job_id, value FROM ` + tableJobs + ` WHERE par=? AND queue=? AND job_id>? LIMIT ?`
+	query := `SELECT job_id, value FROM ` + tableJobs + ` WHERE par=? AND queue=? AND job_id>=? LIMIT ?`
 	jobs := make([]*core.Job, 0)
 	var jobid, value string
 	iter := me.session.Query(query, partition, queue, start, n).Iter()
 	for iter.Scan(&jobid, &value) {
-		jobs = append(jobs, &core.Job{JobID: jobid, Value: value})
+		jobs = append(jobs, &core.Job{ID: jobid, Value: value})
 	}
 	err := iter.Close()
 	if err != nil {

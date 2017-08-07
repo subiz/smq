@@ -6,7 +6,7 @@ import (
 )
 
 type Job struct {
-	JobID, Value string
+	ID, Value string
 }
 
 type smdb interface {
