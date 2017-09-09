@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 	core "bitbucket.org/subiz/smq/core"
+	"bitbucket.org/subiz/servicespec/proto/lang"
 )
 
 const (
@@ -75,32 +76,37 @@ func (me *QueueDB) createTables(seeds []string) {
 func (me *QueueDB) UpsertJobIndex(partition, queue, jobid, state string) {
 	query := "UPDATE " + tableIndexs + " SET current_job=?, state=? WHERE par=? AND queue=?"
 	err := me.session.Query(query, jobid, state, partition, queue).Exec()
-	common.PanicInternal(err, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
+	common.PanicIfError(err, lang.T_database_error, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
 }
 
 func (me *QueueDB) UpsertJob(partition, queue, jobid, value string) {
 	query := "INSERT INTO " + tableJobs + "(par, queue, job_id, value) VALUES(?,?,?,?)"
 	err := me.session.Query(query, partition, queue, jobid, value).Exec()
-	common.PanicInternal(err, "unable to create job, %s, %s, %s, %s", partition, queue, jobid, value)
+	common.PanicIfError(err, lang.T_database_error, "unable to create job, %s, %s, %s, %s", partition, queue, jobid, value)
 }
 
 func (me *QueueDB) ListJobs(partition, queue, start string, n int) []*core.Job {
-	query := `SELECT job_id, value FROM ` + tableJobs + ` WHERE par=? AND queue=? AND job_id>=? LIMIT ?`
 	jobs := make([]*core.Job, 0)
+	if n == 0 {
+		return jobs
+	}
+	query := `SELECT job_id, value FROM ` + tableJobs + ` WHERE par=? AND queue=? AND job_id>=? LIMIT ?`
 	var jobid, value string
 	iter := me.session.Query(query, partition, queue, start, n).Iter()
 	for iter.Scan(&jobid, &value) {
-		jobs = append(jobs, &core.Job{ID: jobid, Value: value})
+		jobs = append(jobs, &core.Job{
+			ID: jobid,
+			Value: value,
+		})
 	}
 	err := iter.Close()
-	if err != nil {
-		if err.Error() != gocql.ErrNotFound.Error() {
-			common.PanicInternal(err, "unable to list jobs %s, %s, %s, %d", partition, queue, start, n)
-		}
+	if err != nil && err.Error() != gocql.ErrNotFound.Error() {
+		common.PanicIfError(err, lang.T_database_error, "unable to list jobs %s, %s, %s, %d", partition, queue, start, n)
 	}
 	return jobs
 }
 
+// IterQueue iterate over all queues in partition
 func (me *QueueDB) IterQueue(partition string) <-chan string {
 	outchan := make(chan string)
 	go func() {
@@ -113,7 +119,7 @@ func (me *QueueDB) IterQueue(partition string) <-chan string {
 		}
 		err := iter.Close()
 		if err != nil && err.Error() != gocql.ErrNotFound.Error() {
-			common.PanicInternal(err, "unable to scan partition %s", partition)
+			common.PanicIfError(err, lang.T_database_error, "unable to scan partition %s", partition)
 		}
 	}()
 	return outchan
@@ -123,7 +129,7 @@ func (me *QueueDB) IterQueue(partition string) <-chan string {
 func (me *QueueDB) DeleteIndex(partition, queue string) {
 	query := "DELETE FROM " + tableIndexs + " WHERE par=? AND queue=?"
 	err := me.session.Query(query, partition, queue).Exec()
-	common.PanicInternal(err, "unable to delete index %s, %s", partition, queue)
+	common.PanicIfError(err, lang.T_database_error, "unable to delete index %s, %s", partition, queue)
 }
 
 func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index, state, lastjobid string) {
@@ -131,7 +137,7 @@ func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index, state,
 	err := me.session.Query(query, partition, queue).Scan(&index, &lastjobid, &state)
 	if err != nil {
 		if err.Error() != gocql.ErrNotFound.Error() {
-			common.PanicInternal(err, "unable to read index %s, %s", partition, queue)
+			common.PanicIfError(err, lang.T_database_error, "unable to read index %s, %s", partition, queue)
 		}
 		found = false
 	} else {
@@ -143,5 +149,5 @@ func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index, state,
 func (me *QueueDB) SetLastJobID(partition, queue, lastjobid string) {
 	query := "UPDATE " + tableIndexs + " SET last_job=? WHERE par=? AND queue=?"
 	err := me.session.Query(query, lastjobid, partition, queue).Exec()
-	common.PanicInternal(err, "unable to update jobindex %s, %s, %v", partition, queue, lastjobid)
+	common.PanicIfError(err, lang.T_database_error, "unable to update jobindex %s, %s, %v", partition, queue, lastjobid)
 }

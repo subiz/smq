@@ -2,17 +2,20 @@ package core
 
 import (
 	"bitbucket.org/subiz/gocommon"
-	"bitbucket.org/subiz/id"
+	"strconv"
 )
 
 type Job struct {
 	ID, Value string
 }
 
+// why not use kafka? kafka doesn't support unlimited queue
 type smdb interface {
 	UpsertJobIndex(partition, queue, jobid, state string)
 	UpsertJob(partition, queue, jobid, value string)
 	ListJobs(partition, queue, start string, n int) []*Job
+
+	// IterQueue iterate over all queues in partition
 	IterQueue(partition string) <-chan string
 	DeleteIndex(partition, queue string)
 	ReadIndex(partition, queue string) (found bool, index, state, lastjobid string)
@@ -32,19 +35,23 @@ func (me *MQ) Config(db smdb) {
 }
 
 // Enqueue add new job to specific queue
-func (me *MQ) Enqueue(partition, queue, value string) string {
-	me.lm.Lock(partition + queue)
-	defer me.lm.Unlock(partition + queue)
-	jobid := ID.NewSmqJobID()
-	me.db.SetLastJobID(partition, queue, jobid)
-	me.db.UpsertJob(partition, queue, jobid, value)
+func (me *MQ) Enqueue(par, queue, value string) string {
+	defer me.lm.Lock(par + queue).Unlock()
+
+	// new id = last jobid + 1
+	_, _, _, lastid := me.db.ReadIndex(par, queue)
+	lastid64, _ := strconv.ParseInt(lastid, 0, 64)
+	lastid64++
+	jobid := strconv.FormatInt(lastid64, 10)
+
+	me.db.SetLastJobID(par, queue, jobid)
+	me.db.UpsertJob(par, queue, jobid, value)
 	return jobid
 }
 
 // Commit job
 func (me *MQ) Commit(partition, queue, jobid, state string) {
-	me.lm.Lock(partition + queue)
-	defer me.lm.Unlock(partition + queue)
+	me.lm.Lock(partition + queue).Unlock()
 	me.db.UpsertJobIndex(partition, queue, jobid, state)
 }
 

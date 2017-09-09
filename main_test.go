@@ -18,8 +18,7 @@ func skipQueueTest(t *testing.T) {
 }
 
 func tearupQueueTest(t *testing.T) {
-	cassandraHost := common.StartCassandraDev("subiz-test-cassandra")
-	//cassandraHost := "127.0.0.1:9042"
+	cassandraHost := common.StartCassandraDev("")
 	queue = NewSMQ([]string{cassandraHost}, "smq", 1, 1 * time.Hour)
 }
 
@@ -59,7 +58,7 @@ func TestQueueIter(t *testing.T) {
 	sum := 0
 	for q := 0; q < 100; q++ {
 		sum += q
-		queue.Enqueue(par, "queue=" + strconv.Itoa(q) + ID.New(), strconv.Itoa(q))
+		queue.Enqueue(par, "queue=" + strconv.Itoa(q) + "=" + ID.New(), strconv.Itoa(q))
 	}
 	queuechan := queue.QueueIter(par)
 	for item := range queuechan {
