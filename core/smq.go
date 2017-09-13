@@ -31,7 +31,7 @@ type MQ struct {
 func (me *MQ) Config(db smdb) {
 	me.lm = &common.MutexMap{}
 	me.db = db
-	me.lm.Init()
+	me.lm.Config()
 }
 
 // Enqueue add new job to specific queue
