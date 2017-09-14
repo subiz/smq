@@ -2,24 +2,24 @@ package core
 
 import (
 	"bitbucket.org/subiz/gocommon"
-	"strconv"
 )
 
 type Job struct {
-	ID, Value string
+	ID int64
+	Value string
 }
 
 // why not use kafka? kafka doesn't support unlimited queue
 type smdb interface {
-	UpsertJobIndex(partition, queue, jobid, state string)
-	UpsertJob(partition, queue, jobid, value string)
-	ListJobs(partition, queue, start string, n int) []*Job
+	UpsertJobIndex(partition, queue string, jobid int64, state string)
+	UpsertJob(partition, queue string, jobid int64, value string)
+	ListJobs(partition, queue string, start int64, n int) []*Job
 
 	// IterQueue iterate over all queues in partition
 	IterQueue(partition string) <-chan string
 	DeleteIndex(partition, queue string)
-	ReadIndex(partition, queue string) (found bool, index, state, lastjobid string)
-	SetLastJobID(partition, queue, lastjobid string)
+	ReadIndex(partition, queue string) (found bool, index int64, state string, lastjobid int64)
+	SetLastJobID(partition, queue string, lastjobid int64)
 }
 
 // MQ Message queue
@@ -35,14 +35,13 @@ func (me *MQ) Config(db smdb) {
 }
 
 // Enqueue add new job to specific queue
-func (me *MQ) Enqueue(par, queue, value string) string {
+func (me *MQ) Enqueue(par, queue, value string) int64 {
 	defer me.lm.Lock(par + queue).Unlock()
 
 	// new id = last jobid + 1
-	_, _, _, lastid := me.db.ReadIndex(par, queue)
-	lastid64, _ := strconv.ParseInt(lastid, 0, 64)
+	_, _, _, lastid64 := me.db.ReadIndex(par, queue)
 	lastid64++
-	jobid := strconv.FormatInt(lastid64, 10)
+	jobid := lastid64
 
 	me.db.SetLastJobID(par, queue, jobid)
 	me.db.UpsertJob(par, queue, jobid, value)
@@ -50,15 +49,15 @@ func (me *MQ) Enqueue(par, queue, value string) string {
 }
 
 // Commit job
-func (me *MQ) Commit(partition, queue, jobid, state string) {
+func (me *MQ) Commit(partition, queue string, jobid int64, state string) {
 	me.lm.Lock(partition + queue).Unlock()
 	me.db.UpsertJobIndex(partition, queue, jobid, state)
 }
 
 // Peek list N jobs in queue start from current job in queue
-func (me *MQ) Peek(partition, queue string, n int) (found bool, index, state string, jobs []*Job) {
+func (me *MQ) Peek(partition, queue string, n int) (found bool, index int64, state string, jobs []*Job) {
 	defer me.lm.Lock(partition + queue).Unlock()
-	var lastjobid string
+	var lastjobid int64
 	found, index, state, lastjobid = me.db.ReadIndex(partition, queue)
 	if state == "" && index == lastjobid {
 		me.db.DeleteIndex(partition, queue)
@@ -74,6 +73,6 @@ func (me *MQ) QueueIter(partition string) <-chan string {
 	return me.db.IterQueue(partition)
 }
 
-func (me *MQ) List(partition, queue, start string, n int) []*Job {
+func (me *MQ) List(partition, queue string, start int64, n int) []*Job {
 	return me.db.ListJobs(partition, queue, start, n)
 }

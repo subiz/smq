@@ -30,13 +30,13 @@ func TestQueue(t *testing.T) {
 	j2 := queue.Enqueue(par, q, "2")
 	j3 := queue.Enqueue(par, q, "3")
 	found, jobid, state, jobs := queue.Peek(par, q, 2)
-	if !found || "" != jobid || state != "" || len(jobs) != 2 ||
+	if !found || 0 != jobid || state != "" || len(jobs) != 2 ||
 		jobs[0].ID != j1 || jobs[0].Value != "1" ||
 		jobs[1].ID != j2 || jobs[1].Value != "2" {
 		t.Errorf("wrong %s", state)
 	}
 
-	jobs = queue.List(par, q, "", 10)
+	jobs = queue.List(par, q, 0, 10)
 	if len(jobs) != 3 ||
 		jobs[0].ID != j1 || jobs[0].Value != "1" ||
 		jobs[1].ID != j2 || jobs[1].Value != "2" ||
