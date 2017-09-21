@@ -2,6 +2,7 @@ package core
 
 import (
 	"bitbucket.org/subiz/gocommon"
+	_	"runtime"
 )
 
 type Job struct {
@@ -50,8 +51,11 @@ func (me *MQ) Enqueue(par, queue, value string) int64 {
 
 // Commit job
 func (me *MQ) Commit(partition, queue string, jobid int64, state string) {
-	me.lm.Lock(partition + queue).Unlock()
-	me.db.UpsertJobIndex(partition, queue, jobid, state)
+	defer me.lm.Lock(partition + queue).Unlock()
+	_, index, _, _ := me.db.ReadIndex(partition, queue)
+	if jobid > index {
+		me.db.UpsertJobIndex(partition, queue, jobid, state)
+	}
 }
 
 // Peek list N jobs in queue start from current job in queue
@@ -59,12 +63,14 @@ func (me *MQ) Peek(partition, queue string, n int) (found bool, index int64, sta
 	defer me.lm.Lock(partition + queue).Unlock()
 	var lastjobid int64
 	found, index, state, lastjobid = me.db.ReadIndex(partition, queue)
+	//runtime.Breakpoint()
 	if state == "" && index == lastjobid {
 		me.db.DeleteIndex(partition, queue)
 	}
 	if !found {
 		return
 	}
+
 	jobs = me.db.ListJobs(partition, queue, index, n)
 	return
 }

@@ -11,7 +11,7 @@ import (
 
 const (
 	keyspace = "smq"
-	tableIndexs = "indexs"
+	tblIndices = "indices"
 	tableJobs = "jobs"
 )
 
@@ -60,8 +60,8 @@ func (me *QueueDB) createTables(seeds []string) {
 		last_job BIGINT,
 		state ASCII,
 		PRIMARY KEY (par, queue)
-	) WITH CLUSTERING ORDER BY (queue ASC)`, tableIndexs)).Exec()
-	common.Panicf(err, "failed to create table %s", tableIndexs)
+	) WITH CLUSTERING ORDER BY (queue ASC)`, tblIndices)).Exec()
+	common.Panicf(err, "failed to create table %s", tblIndices)
 
 	err = me.session.Query(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
 		par ASCII,
@@ -74,7 +74,7 @@ func (me *QueueDB) createTables(seeds []string) {
 }
 
 func (me *QueueDB) UpsertJobIndex(partition, queue string, jobid int64, state string) {
-	query := "UPDATE " + tableIndexs + " SET current_job=?, state=? WHERE par=? AND queue=?"
+	query := "UPDATE " + tblIndices + " SET current_job=?, state=? WHERE par=? AND queue=?"
 	err := me.session.Query(query, jobid, state, partition, queue).Exec()
 	common.PanicIfError(err, lang.T_database_error, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
 }
@@ -112,7 +112,7 @@ func (me *QueueDB) IterQueue(partition string) <-chan string {
 	outchan := make(chan string)
 	go func() {
 		defer close(outchan)
-		query := `SELECT queue FROM ` + tableIndexs + ` WHERE par=?`
+		query := `SELECT queue FROM ` + tblIndices + ` WHERE par=?`
 		var queue string
 		iter := me.session.Query(query, partition).Iter()
 		for iter.Scan(&queue) {
@@ -128,13 +128,13 @@ func (me *QueueDB) IterQueue(partition string) <-chan string {
 
 // DeleteIndex deletes index
 func (me *QueueDB) DeleteIndex(partition, queue string) {
-	query := "DELETE FROM " + tableIndexs + " WHERE par=? AND queue=?"
+	query := "DELETE FROM " + tblIndices + " WHERE par=? AND queue=?"
 	err := me.session.Query(query, partition, queue).Exec()
 	common.PanicIfError(err, lang.T_database_error, "unable to delete index %s, %s", partition, queue)
 }
 
 func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index int64, state string, lastjobid int64) {
-	query := "SELECT current_job, last_job, state FROM " + tableIndexs + " WHERE par=? AND queue=?"
+	query := "SELECT current_job, last_job, state FROM " + tblIndices + " WHERE par=? AND queue=?"
 	err := me.session.Query(query, partition, queue).Scan(&index, &lastjobid, &state)
 	if err != nil {
 		if err.Error() != gocql.ErrNotFound.Error() {
@@ -148,7 +148,7 @@ func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index int64, 
 }
 
 func (me *QueueDB) SetLastJobID(partition, queue string, lastjobid int64) {
-	query := "UPDATE " + tableIndexs + " SET last_job=? WHERE par=? AND queue=?"
+	query := "UPDATE " + tblIndices + " SET last_job=? WHERE par=? AND queue=?"
 	err := me.session.Query(query, lastjobid, partition, queue).Exec()
 	common.PanicIfError(err, lang.T_database_error, "unable to update jobindex %s, %s, %v", partition, queue, lastjobid)
 }
