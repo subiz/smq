@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 	core "bitbucket.org/subiz/smq/core"
-	"bitbucket.org/subiz/servicespec/proto/lang"
+	"bitbucket.org/subiz/header/lang"
 )
 
 const (
