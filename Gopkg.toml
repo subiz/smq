@@ -23,15 +23,15 @@
 
 [[constraint]]
   name = "bitbucket.org/subiz/gocommon"
-  version = "1.0.8"
+  branch = "master"
 
 [[constraint]]
   name = "bitbucket.org/subiz/header"
-  version = "1.0.7"
+  branch = "master"
 
 [[constraint]]
   name = "bitbucket.org/subiz/id"
-  version = "0.1.5"
+  branch = "master"
 
 [[constraint]]
   branch = "master"

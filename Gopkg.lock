@@ -2,22 +2,22 @@
 
 
 [[projects]]
+  branch = "master"
   name = "bitbucket.org/subiz/gocommon"
   packages = ["."]
-  revision = "456e8437d9267cbcc3fb236853196371c3fb06db"
-  version = "v1.0.12"
+  revision = "95e61ff6299776967b00e91e649d8a2c6fcd23c4"
 
 [[projects]]
+  branch = "master"
   name = "bitbucket.org/subiz/header"
   packages = ["account","auth","client","common","content","conversation","event","lang","user"]
-  revision = "811f44a79461d12df8b8387f11933d3e772b0b70"
-  version = "v1.0.20"
+  revision = "d457a84f8d88b128ed4579cfd9e5ed26da3b62f7"
 
 [[projects]]
+  branch = "master"
   name = "bitbucket.org/subiz/id"
   packages = ["."]
-  revision = "93efbb3a8402b05b6e50b322131f3914e3d1c6f7"
-  version = "v0.1.6"
+  revision = "a6ad2be827b8fdcedc9d1fa3b698ab45db105dd4"
 
 [[projects]]
   name = "github.com/fatih/color"
@@ -148,6 +148,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f86bbca98a34ed765984950d9fc2f97c09bf8a67e33195250e03bb634d882e5d"
+  inputs-digest = "6e2ef7e016a4e5334c0566eeba503800161f0f8dec5295aa1c606eb4fefaa89f"
   solver-name = "gps-cdcl"
   solver-version = 1
