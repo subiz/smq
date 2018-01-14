@@ -133,6 +133,12 @@ func (me *QueueDB) DeleteIndex(partition, queue string) {
 	common.DieIf(err, lang.T_database_error, "unable to delete index %s, %s", partition, queue)
 }
 
+func (me *QueueDB) DeleteJobs(partition, queue string) {
+	query := "DELETE FROM " + tblJobs + " WHERE par=? AND queue=?"
+	err := me.session.Query(query, partition, queue).Exec()
+	common.DieIf(err, lang.T_database_error, "unable to delete jobs %s, %s", partition, queue)
+}
+
 func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index int64, state string, lastjobid int64) {
 	query := "SELECT current_job, last_job, state FROM " + tblIndices + " WHERE par=? AND queue=?"
 	err := me.session.Query(query, partition, queue).Scan(&index, &lastjobid, &state)

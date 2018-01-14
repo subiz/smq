@@ -15,6 +15,7 @@ type smdb interface {
 	UpsertJobIndex(partition, queue string, jobid int64, state string)
 	UpsertJob(partition, queue string, jobid int64, value string)
 	ListJobs(partition, queue string, start int64, n int) []*Job
+	DeleteJobs(partition, queue string)
 
 	// IterQueue iterate over all queues in partition
 	IterQueue(partition string) <-chan string
@@ -81,4 +82,9 @@ func (me *MQ) QueueIter(partition string) <-chan string {
 
 func (me *MQ) List(partition, queue string, start int64, n int) []*Job {
 	return me.db.ListJobs(partition, queue, start, n)
+}
+
+func (me *MQ) DeleteQueue(partition, queue string) {
+	me.db.DeleteIndex(partition, queue)
+	me.db.DeleteJobs(partition, queue)
 }

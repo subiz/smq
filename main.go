@@ -13,6 +13,7 @@ type SMQ interface {
 	Peek(partition, queue string, njob int) (found bool, index int64, state string, jobs []*core.Job)
 	QueueIter(partition string) <-chan string
 	List(partition, queue string, start int64, n int) []*core.Job
+	DeleteQueue(partition, queue string)
 }
 
 // NewSMQ create new subiz mq
