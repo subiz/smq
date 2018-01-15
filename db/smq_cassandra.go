@@ -134,7 +134,7 @@ func (me *QueueDB) DeleteIndex(partition, queue string) {
 }
 
 func (me *QueueDB) DeleteJobs(partition, queue string) {
-	query := "DELETE FROM " + tblJobs + " WHERE par=? AND queue=?"
+	query := "DELETE FROM " + tableJobs + " WHERE par=? AND queue=?"
 	err := me.session.Query(query, partition, queue).Exec()
 	common.DieIf(err, lang.T_database_error, "unable to delete jobs %s, %s", partition, queue)
 }

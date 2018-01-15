@@ -5,19 +5,23 @@
   branch = "master"
   name = "bitbucket.org/subiz/gocommon"
   packages = ["."]
-  revision = "95e61ff6299776967b00e91e649d8a2c6fcd23c4"
+  revision = "819016a1deef109a33d8d023210faa3294d80ce3"
 
 [[projects]]
   branch = "master"
   name = "bitbucket.org/subiz/header"
-  packages = ["account","auth","client","common","content","conversation","event","lang","user"]
-  revision = "d457a84f8d88b128ed4579cfd9e5ed26da3b62f7"
+  packages = [
+    "auth",
+    "common",
+    "lang"
+  ]
+  revision = "f2c3602cb31d2c12c106c4742d0a625b92c0be70"
 
 [[projects]]
   branch = "master"
   name = "bitbucket.org/subiz/id"
   packages = ["."]
-  revision = "a6ad2be827b8fdcedc9d1fa3b698ab45db105dd4"
+  revision = "669be21f71dec93d8d985c64cde7f7d69673634a"
 
 [[projects]]
   name = "github.com/fatih/color"
@@ -28,8 +32,13 @@
 [[projects]]
   branch = "master"
   name = "github.com/gocql/gocql"
-  packages = [".","internal/lru","internal/murmur","internal/streams"]
-  revision = "f5cee644705e9593c342bfabe667720580a5289f"
+  packages = [
+    ".",
+    "internal/lru",
+    "internal/murmur",
+    "internal/streams"
+  ]
+  revision = "79434f238fe5c76efa88f8ed131adefe5b31a0d1"
 
 [[projects]]
   branch = "master"
@@ -47,7 +56,7 @@
   branch = "master"
   name = "github.com/gorilla/schema"
   packages = ["."]
-  revision = "693523c4a63442cd587a21af72c8741f7c01dcb7"
+  revision = "8b1100835db5bbdae88541510f70d114b91a7e4d"
 
 [[projects]]
   branch = "master"
@@ -58,8 +67,8 @@
 [[projects]]
   name = "github.com/hashicorp/consul"
   packages = ["api"]
-  revision = "51ea240df8476e02215d53fbfad5838bf0d44d21"
-  version = "v1.0.0"
+  revision = "b55059fc3d0327c92c41431e57dfd2df3f956b03"
+  version = "v1.0.2"
 
 [[projects]]
   branch = "master"
@@ -101,43 +110,47 @@
   branch = "master"
   name = "github.com/orcaman/concurrent-map"
   packages = ["."]
-  revision = "d4c23bd0e01134806215ffe65ba3fd22ec6721f7"
+  revision = "2ae17bc4c860c83513ee50feb9746f3e50d7515d"
 
 [[projects]]
   branch = "master"
   name = "github.com/pquerna/ffjson"
-  packages = ["ffjson","fflib/v1","fflib/v1/internal"]
+  packages = [
+    "ffjson",
+    "fflib/v1",
+    "fflib/v1/internal"
+  ]
   revision = "d49c2bc1aa135aad0c6f4fc2056623ec78f5d5ac"
 
 [[projects]]
   branch = "master"
   name = "github.com/thanhpk/baseconv"
   packages = ["."]
-  revision = "ecdb2bce436580b7af32bd93f569dddadf3a0d4c"
+  revision = "758d96e93935b542e8d1b72a6d1a5e2b7479921a"
 
 [[projects]]
+  branch = "master"
   name = "github.com/thanhpk/randstr"
   packages = ["."]
-  revision = "6d99cbb86c31ca5989281c64d105de7914c28fd2"
-  version = "v1.0.0"
+  revision = "54b72d72edea0f7ab8190b89c94237730dc6828b"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "c73622c77280266305273cb545f54516ced95b93"
+  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "95c6576299259db960f6c5b9b69ea52422860fce"
+  revision = "810d7000345868fc619eb81f46307107118f4ae1"
 
 [[projects]]
   name = "google.golang.org/grpc"
   packages = ["metadata"]
-  revision = "61d37c5d657a47e4404fd6823bd598341a2595de"
-  version = "v1.7.1"
+  revision = "e687fa4e6424368ece6e4fe727cea2c806a0fcb4"
+  version = "v1.8.2"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
