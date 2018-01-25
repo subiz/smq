@@ -5,7 +5,7 @@
   branch = "master"
   name = "bitbucket.org/subiz/gocommon"
   packages = ["."]
-  revision = "819016a1deef109a33d8d023210faa3294d80ce3"
+  revision = "032fa049b42ec0e868cabf95a958099208f0cfa2"
 
 [[projects]]
   branch = "master"
@@ -15,13 +15,13 @@
     "common",
     "lang"
   ]
-  revision = "f2c3602cb31d2c12c106c4742d0a625b92c0be70"
+  revision = "a0c1f92219a3db056564ec5591a495264c6a8217"
 
 [[projects]]
   branch = "master"
   name = "bitbucket.org/subiz/id"
   packages = ["."]
-  revision = "669be21f71dec93d8d985c64cde7f7d69673634a"
+  revision = "14addffc0006afff13d70bb86800bd29e52bd2bc"
 
 [[projects]]
   name = "github.com/fatih/color"
@@ -138,13 +138,13 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
+  revision = "0ed95abb35c445290478a5348a7b38bb154135fd"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "810d7000345868fc619eb81f46307107118f4ae1"
+  revision = "ef802241c90f84d84d644a2d8d0de8ee96038c9c"
 
 [[projects]]
   name = "google.golang.org/grpc"
