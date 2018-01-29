@@ -97,7 +97,7 @@ func (me *QueueDB) ListJobs(partition, queue string, start int64, n int) []*core
 	if n == 0 {
 		return jobs
 	}
-	query := `SELECT job_id, value FROM ` + tableJobs + ` WHERE par=? AND queue=? AND job_id>=? LIMIT ?`
+	query := `SELECT job_id, value FROM ` + tableJobs + ` WHERE par=? AND queue=? AND job_id>? LIMIT ?`
 	var jobid int64
 	var value string
 	iter := me.session.Query(query, partition, queue, start, n).Iter()
