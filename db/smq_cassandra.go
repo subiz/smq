@@ -74,9 +74,16 @@ func (me *QueueDB) createTables(seeds []string) {
 }
 
 func (me *QueueDB) UpsertJobIndex(partition, queue string, jobid int64, state string) {
-	query := "UPDATE " + tblIndices + " SET current_job=?, state=? WHERE par=? AND queue=?"
-	err := me.session.Query(query, jobid, state, partition, queue).Exec()
-	common.DieIf(err, lang.T_database_error, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
+	if jobid != -1 {
+		query := "UPDATE " + tblIndices + " SET current_job=?, state=? WHERE par=? AND queue=?"
+		err := me.session.Query(query, jobid, state, partition, queue).Exec()
+		common.DieIf(err, lang.T_database_error, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
+
+	} else {
+		query := "UPDATE " + tblIndices + " SET state=? WHERE par=? AND queue=?"
+		err := me.session.Query(query, state, partition, queue).Exec()
+		common.DieIf(err, lang.T_database_error, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
+	}
 }
 
 func (me *QueueDB) UpsertJob(partition, queue string, jobid int64, value string) {

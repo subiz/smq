@@ -53,7 +53,7 @@ func (me *MQ) Enqueue(par, queue, value string) int64 {
 func (me *MQ) Commit(partition, queue string, jobid int64, state string) {
 	defer me.lm.Lock(partition + queue).Unlock()
 	_, index, _, _ := me.db.ReadIndex(partition, queue)
-	if jobid > index {
+	if jobid >= index || jobid == -1{
 		me.db.UpsertJobIndex(partition, queue, jobid, state)
 	}
 }
