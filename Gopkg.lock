@@ -5,29 +5,29 @@
   branch = "master"
   name = "bitbucket.org/subiz/gocommon"
   packages = ["."]
-  revision = "032fa049b42ec0e868cabf95a958099208f0cfa2"
+  revision = "2cc7558697939a7a10ce9b1b576711601231ac47"
 
 [[projects]]
   branch = "master"
-  name = "bitbucket.org/subiz/header"
+  name = "git.subiz.net/header"
   packages = [
     "auth",
     "common",
     "lang"
   ]
-  revision = "a0c1f92219a3db056564ec5591a495264c6a8217"
+  revision = "cc347dd338dff105a87f1d237f6c560b4d282db6"
 
 [[projects]]
   branch = "master"
-  name = "bitbucket.org/subiz/id"
+  name = "git.subiz.net/idgen"
   packages = ["."]
-  revision = "14addffc0006afff13d70bb86800bd29e52bd2bc"
+  revision = "028c1ae232bdcbe65aea74b1e68ef22ec8607b41"
 
 [[projects]]
   name = "github.com/fatih/color"
   packages = ["."]
-  revision = "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
-  version = "v1.5.0"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
 
 [[projects]]
   branch = "master"
@@ -38,55 +38,37 @@
     "internal/murmur",
     "internal/streams"
   ]
-  revision = "79434f238fe5c76efa88f8ed131adefe5b31a0d1"
+  revision = "045d8d6abc70b5bd02bb18b8fdb05ee54d8c87aa"
 
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["proto"]
-  revision = "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp"
+  ]
+  revision = "89a0c16f4dc2a70c0ed864d8ef64878f24fdaa51"
 
 [[projects]]
   branch = "master"
   name = "github.com/golang/snappy"
   packages = ["."]
-  revision = "553a641470496b2327abcac10b36396bd98e45c9"
+  revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
 
 [[projects]]
-  branch = "master"
   name = "github.com/gorilla/schema"
   packages = ["."]
-  revision = "8b1100835db5bbdae88541510f70d114b91a7e4d"
+  revision = "d0e4c24cff97ae983e9847e0ed5a02dc10013d41"
+  version = "v1.0.2"
 
 [[projects]]
   branch = "master"
   name = "github.com/hailocab/go-hostpool"
   packages = ["."]
   revision = "e80d13ce29ede4452c43dea11e79b9bc8a15b478"
-
-[[projects]]
-  name = "github.com/hashicorp/consul"
-  packages = ["api"]
-  revision = "b55059fc3d0327c92c41431e57dfd2df3f956b03"
-  version = "v1.0.2"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hashicorp/go-cleanhttp"
-  packages = ["."]
-  revision = "3573b8b52aa7b37b9358d966a898feb387f62437"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hashicorp/go-rootcerts"
-  packages = ["."]
-  revision = "6bb64b370b90e7ef1fa532be9e591a81c3493e00"
-
-[[projects]]
-  name = "github.com/hashicorp/serf"
-  packages = ["coordinate"]
-  revision = "d6574a5bb1226678d7010325fb6c985db20ee458"
-  version = "v0.8.1"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -102,15 +84,9 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/mitchellh/go-homedir"
-  packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
-
-[[projects]]
-  branch = "master"
   name = "github.com/orcaman/concurrent-map"
   packages = ["."]
-  revision = "2ae17bc4c860c83513ee50feb9746f3e50d7515d"
+  revision = "b28018939af9022337862b94a463abb18abb3e0e"
 
 [[projects]]
   branch = "master"
@@ -120,7 +96,7 @@
     "fflib/v1",
     "fflib/v1/internal"
   ]
-  revision = "d49c2bc1aa135aad0c6f4fc2056623ec78f5d5ac"
+  revision = "af8b230fcd2007c7095168ca8ab94c68b60840c6"
 
 [[projects]]
   branch = "master"
@@ -132,35 +108,97 @@
   branch = "master"
   name = "github.com/thanhpk/randstr"
   packages = ["."]
-  revision = "54b72d72edea0f7ab8190b89c94237730dc6828b"
+  revision = "c5a0f26468db1b2f953bd3e2364a8af3105cfd2e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context"]
-  revision = "0ed95abb35c445290478a5348a7b38bb154135fd"
+  packages = [
+    "context",
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "trace"
+  ]
+  revision = "f9ce57c11b242f0f1599cf25c89d8cb02c45295a"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "ef802241c90f84d84d644a2d8d0de8ee96038c9c"
+  revision = "acbc56fc7007d2a01796d5bde54f39e3b3e95945"
+
+[[projects]]
+  name = "golang.org/x/text"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable"
+  ]
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
+  name = "google.golang.org/genproto"
+  packages = ["googleapis/rpc/status"]
+  revision = "daca94659cb50e9f37c1b834680f2e46358f10b0"
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = ["metadata"]
-  revision = "e687fa4e6424368ece6e4fe727cea2c806a0fcb4"
-  version = "v1.8.2"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "codes",
+    "connectivity",
+    "credentials",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/transport",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap"
+  ]
+  revision = "32fb0ac620c32ba40a4626ddf94d90d12cce3455"
+  version = "v1.14.0"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
   packages = ["."]
-  revision = "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
-  version = "v0.9.0"
+  revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
+  version = "v0.9.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6e2ef7e016a4e5334c0566eeba503800161f0f8dec5295aa1c606eb4fefaa89f"
+  inputs-digest = "c411cefa56e4066cc8912830962d03b21674486672c0591c2b8db57d34301b0f"
   solver-name = "gps-cdcl"
   solver-version = 1

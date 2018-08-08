@@ -5,7 +5,7 @@ import (
 	. "bitbucket.org/subiz/smq"
 	"bitbucket.org/subiz/gocommon"
 	"time"
-	"bitbucket.org/subiz/id"
+	"git.subiz.net/idgen"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,7 +25,7 @@ func tearupQueueTest(t *testing.T) {
 func TestQueue(t *testing.T) {
 	//skipQueueTest(t)
 	tearupQueueTest(t)
-	par, q := "par" + ID.New(), "queue" + ID.New()
+	par, q := "par" + idgen.New(), "queue" + idgen.New()
 	j1 := queue.Enqueue(par, q, "1")
 	j2 := queue.Enqueue(par, q, "2")
 	j3 := queue.Enqueue(par, q, "3")
@@ -54,11 +54,11 @@ func TestQueue(t *testing.T) {
 func TestQueueIter(t *testing.T) {
 	//skipQueueTest(t)
 	tearupQueueTest(t)
-	par := "par" + ID.New()
+	par := "par" + idgen.New()
 	sum := 0
 	for q := 0; q < 100; q++ {
 		sum += q
-		queue.Enqueue(par, "queue=" + strconv.Itoa(q) + "=" + ID.New(), strconv.Itoa(q))
+		queue.Enqueue(par, "queue=" + strconv.Itoa(q) + "=" + idgen.New(), strconv.Itoa(q))
 	}
 	queuechan := queue.QueueIter(par)
 	for item := range queuechan {
@@ -80,13 +80,13 @@ func TestQueueIter(t *testing.T) {
 func TestEnqueue(t *testing.T) {
 	skipQueueTest(t)
 	tearupQueueTest(t)
-	par := "par" + ID.New()
+	par := "par" + idgen.New()
 	var wg sync.WaitGroup
 	for i := 0; i< 6; i++ {
 		wg.Add(1)
 		go func() {
 			for q := 0; q < 1000; q++ {
-				queue.Enqueue(par, "queue=" + strconv.Itoa(q) + ID.New(), strconv.Itoa(q))
+				queue.Enqueue(par, "queue=" + strconv.Itoa(q) + idgen.New(), strconv.Itoa(q))
 			}
 			wg.Done()
 		}()

@@ -1,25 +1,25 @@
 package db
 
 import (
-	"github.com/gocql/gocql"
 	"bitbucket.org/subiz/gocommon"
-	"fmt"
-	"time"
 	core "bitbucket.org/subiz/smq/core"
-	"bitbucket.org/subiz/header/lang"
+	"fmt"
+	"git.subiz.net/header/lang"
+	"github.com/gocql/gocql"
+	"time"
 )
 
 const (
-	keyspace = "smq"
+	keyspace   = "smq"
 	tblIndices = "indices"
-	tableJobs = "jobs"
+	tableJobs  = "jobs"
 )
 
 // SubDB manages subscription for webhook
 type QueueDB struct {
-	session *gocql.Session
+	session  *gocql.Session
 	keyspace string
-	jobttl int
+	jobttl   int
 }
 
 // Config initialize db connector and connect to cassandra cluster
@@ -103,7 +103,7 @@ func (me *QueueDB) ListJobs(partition, queue string, start int64, n int) []*core
 	iter := me.session.Query(query, partition, queue, start, n).Iter()
 	for iter.Scan(&jobid, &value) {
 		jobs = append(jobs, &core.Job{
-			ID: jobid,
+			ID:    jobid,
 			Value: value,
 		})
 	}
