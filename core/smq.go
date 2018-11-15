@@ -2,11 +2,11 @@ package core
 
 import (
 	"bitbucket.org/subiz/gocommon"
-	_	"runtime"
+	_ "runtime"
 )
 
 type Job struct {
-	ID int64
+	ID    int64
 	Value string
 }
 
@@ -53,7 +53,7 @@ func (me *MQ) Enqueue(par, queue, value string) int64 {
 func (me *MQ) Commit(partition, queue string, jobid int64, state string) {
 	defer me.lm.Lock(partition + queue).Unlock()
 	_, index, _, _ := me.db.ReadIndex(partition, queue)
-	if jobid >= index || jobid == -1{
+	if jobid >= index || jobid == -1 {
 		me.db.UpsertJobIndex(partition, queue, jobid, state)
 	}
 }

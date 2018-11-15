@@ -1,10 +1,8 @@
 package db
 
 import (
-	"bitbucket.org/subiz/gocommon"
-	core "bitbucket.org/subiz/smq/core"
 	"fmt"
-	"git.subiz.net/header/lang"
+	core "git.subiz.net/smq/core"
 	"github.com/gocql/gocql"
 	"time"
 )
@@ -36,13 +34,17 @@ func (me *QueueDB) createKeyspace(seeds []string, repfactor int) {
 	cluster.Keyspace = "system"
 	var defsession, err = cluster.CreateSession()
 	defer defsession.Close()
-	common.DieIf(err, lang.T_database_error, "failed to connect to cluster: %v", seeds)
+	if err != nil {
+		panic(err)
+	}
 	err = defsession.Query(fmt.Sprintf(`
 		CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {
 			'class': 'SimpleStrategy',
 			'replication_factor': %d
 		}`, me.keyspace, repfactor)).Exec()
-	common.DieIf(err, lang.T_database_error, "failed to create keyspace %s", me.keyspace)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (me *QueueDB) createTables(seeds []string) {
@@ -51,7 +53,9 @@ func (me *QueueDB) createTables(seeds []string) {
 	cluster.Keyspace = me.keyspace
 	var err error
 	me.session, err = cluster.CreateSession()
-	common.DieIf(err, lang.T_database_error, "failed to connect to cluster: %v", seeds)
+	if err != nil {
+		panic(err)
+	}
 
 	err = me.session.Query(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
 		par ASCII,
@@ -61,7 +65,9 @@ func (me *QueueDB) createTables(seeds []string) {
 		state ASCII,
 		PRIMARY KEY (par, queue)
 	) WITH CLUSTERING ORDER BY (queue ASC)`, tblIndices)).Exec()
-	common.DieIf(err, lang.T_database_error, "failed to create table %s", tblIndices)
+	if err != nil {
+		panic(err)
+	}
 
 	err = me.session.Query(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
 		par ASCII,
@@ -70,26 +76,34 @@ func (me *QueueDB) createTables(seeds []string) {
 		value TEXT,
 		PRIMARY KEY ((par, queue), job_id)
 	) WITH CLUSTERING ORDER BY (job_id ASC)`, tableJobs)).Exec()
-	common.DieIf(err, lang.T_database_error, "failed to create table %s", tableJobs)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (me *QueueDB) UpsertJobIndex(partition, queue string, jobid int64, state string) {
 	if jobid != -1 {
 		query := "UPDATE " + tblIndices + " SET current_job=?, state=? WHERE par=? AND queue=?"
 		err := me.session.Query(query, jobid, state, partition, queue).Exec()
-		common.DieIf(err, lang.T_database_error, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
-
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		query := "UPDATE " + tblIndices + " SET state=? WHERE par=? AND queue=?"
 		err := me.session.Query(query, state, partition, queue).Exec()
-		common.DieIf(err, lang.T_database_error, "unable to update jobindex %s, %s, %s, %s", partition, queue, jobid, state)
+		if err != nil {
+			panic(err)
+		}
+
 	}
 }
 
 func (me *QueueDB) UpsertJob(partition, queue string, jobid int64, value string) {
 	query := "INSERT INTO " + tableJobs + "(par, queue, job_id, value) VALUES(?,?,?,?)"
 	err := me.session.Query(query, partition, queue, jobid, value).Exec()
-	common.DieIf(err, lang.T_database_error, "unable to create job, %s, %s, %s, %s", partition, queue, jobid, value)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (me *QueueDB) ListJobs(partition, queue string, start int64, n int) []*core.Job {
@@ -109,7 +123,7 @@ func (me *QueueDB) ListJobs(partition, queue string, start int64, n int) []*core
 	}
 	err := iter.Close()
 	if err != nil && err.Error() != gocql.ErrNotFound.Error() {
-		common.DieIf(err, lang.T_database_error, "unable to list jobs %s, %s, %s, %d", partition, queue, start, n)
+		panic(err)
 	}
 	return jobs
 }
@@ -127,7 +141,7 @@ func (me *QueueDB) IterQueue(partition string) <-chan string {
 		}
 		err := iter.Close()
 		if err != nil && err.Error() != gocql.ErrNotFound.Error() {
-			common.DieIf(err, lang.T_database_error, "unable to scan partition %s", partition)
+			panic(err)
 		}
 	}()
 	return outchan
@@ -137,13 +151,17 @@ func (me *QueueDB) IterQueue(partition string) <-chan string {
 func (me *QueueDB) DeleteIndex(partition, queue string) {
 	query := "DELETE FROM " + tblIndices + " WHERE par=? AND queue=?"
 	err := me.session.Query(query, partition, queue).Exec()
-	common.DieIf(err, lang.T_database_error, "unable to delete index %s, %s", partition, queue)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (me *QueueDB) DeleteJobs(partition, queue string) {
 	query := "DELETE FROM " + tableJobs + " WHERE par=? AND queue=?"
 	err := me.session.Query(query, partition, queue).Exec()
-	common.DieIf(err, lang.T_database_error, "unable to delete jobs %s, %s", partition, queue)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index int64, state string, lastjobid int64) {
@@ -151,7 +169,7 @@ func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index int64, 
 	err := me.session.Query(query, partition, queue).Scan(&index, &lastjobid, &state)
 	if err != nil {
 		if err.Error() != gocql.ErrNotFound.Error() {
-			common.DieIf(err, lang.T_database_error, "unable to read index %s, %s", partition, queue)
+			panic(err)
 		}
 		found = false
 	} else {
@@ -163,5 +181,7 @@ func (me *QueueDB) ReadIndex(partition, queue string) (found bool, index int64, 
 func (me *QueueDB) SetLastJobID(partition, queue string, lastjobid int64) {
 	query := "UPDATE " + tblIndices + " SET last_job=? WHERE par=? AND queue=?"
 	err := me.session.Query(query, lastjobid, partition, queue).Exec()
-	common.DieIf(err, lang.T_database_error, "unable to update jobindex %s, %s, %v", partition, queue, lastjobid)
+	if err != nil {
+		panic(err)
+	}
 }
