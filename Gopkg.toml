@@ -31,15 +31,11 @@
 
 [[constraint]]
   branch = "master"
-  name = "git.subiz.net/header"
-
-[[constraint]]
-  branch = "master"
   name = "git.subiz.net/idgen"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/gocql/gocql"
+  revision = "9bf6ce5bbcf1d790a892d0d470044bc891b798d6"
 
 [prune]
   go-tests = true
