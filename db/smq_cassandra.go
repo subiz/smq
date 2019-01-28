@@ -2,8 +2,8 @@ package db
 
 import (
 	"fmt"
-	core "git.subiz.net/smq/core"
 	"github.com/gocql/gocql"
+	core "github.com/subiz/smq/core"
 	"time"
 )
 

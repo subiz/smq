@@ -3,8 +3,8 @@
 package smq_test
 
 import (
-	"git.subiz.net/idgen"
-	. "git.subiz.net/smq"
+	"github.com/subiz/idgen"
+	. "github.com/subiz/smq"
 	"strconv"
 	"strings"
 	"sync"

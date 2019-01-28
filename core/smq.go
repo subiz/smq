@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bitbucket.org/subiz/gocommon"
 	_ "runtime"
 )
 
@@ -26,12 +25,12 @@ type smdb interface {
 
 // MQ Message queue
 type MQ struct {
-	lm *common.MutexMap
+	lm *MutexMap
 	db smdb
 }
 
 func (me *MQ) Config(db smdb) {
-	me.lm = common.NewMutexMap()
+	me.lm = NewMutexMap()
 	me.db = db
 }
 

@@ -1,8 +1,8 @@
 package smq
 
 import (
-	"git.subiz.net/smq/core"
-	"git.subiz.net/smq/db"
+	"github.com/subiz/smq/core"
+	"github.com/subiz/smq/db"
 	"time"
 )
 
