@@ -37,10 +37,6 @@
   branch = "master"
   name = "github.com/subiz/errors"
 
-[[constraint]]
-  branch = "master"
-  name = "github.com/subiz/idgen"
-
 [prune]
   go-tests = true
   unused-packages = true

@@ -62,14 +62,6 @@
   revision = "09cb44817ac5c10c19fd28a9622d8b5c23558bbf"
 
 [[projects]]
-  branch = "master"
-  digest = "1:1d37656ac17cb147edff8387dda4f20d71c8b081106df4369d41a498f9c7f313"
-  name = "github.com/subiz/idgen"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "1184b591786614f164c481728bf1da184b99f68f"
-
-[[projects]]
   digest = "1:2d1fbdc6777e5408cabeb02bf336305e724b925ff4546ded0fa8715a7267922a"
   name = "gopkg.in/inf.v0"
   packages = ["."]
@@ -84,7 +76,6 @@
     "github.com/gocql/gocql",
     "github.com/hashicorp/golang-lru",
     "github.com/subiz/errors",
-    "github.com/subiz/idgen",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
