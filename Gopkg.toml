@@ -27,7 +27,15 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/orcaman/concurrent-map"
+  name = "github.com/gocql/gocql"
+
+[[constraint]]
+  name = "github.com/hashicorp/golang-lru"
+  version = "0.5.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/subiz/errors"
 
 [[constraint]]
   branch = "master"
