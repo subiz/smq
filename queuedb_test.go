@@ -10,7 +10,7 @@ import (
 // must create db first
 func TestQueue(t *testing.T) {
 	var NPAR = 5
-	db, err := NewQueueDB([]string{"dev.subiz.net:9042"}, "smqtest")
+	db, err := NewQueue([]string{"dev.subiz.net:9042"}, "smqtest")
 	if err != nil {
 		panic(err)
 	}
