@@ -20,26 +20,27 @@ func TestQueue(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	for par := 0; par < NPAR; par++ {
 		wg.Add(1)
-		go func(par int) {
+		go func(par string) {
 			defer wg.Done()
 			var lastoffset int64
 			for j := 0; j < 1500; j++ {
 				var err error
-				lastoffset, err = db.Enqueue(par, queue, []byte(fmt.Sprintf("%d", j)))
+				lastoffset, err = db.Enqueue(par+queue, []byte(fmt.Sprintf("%d", j)))
 				if err != nil {
 					panic(err)
 				}
 			}
 
 			if lastoffset != 1500 {
-				t.Errorf("%d should be 1000, got %d", par, lastoffset)
+				t.Errorf("%s: should be 1000, got %d", par, lastoffset)
 			}
-		}(par)
+		}(fmt.Sprintf("%d", par))
 	}
 
 	wg.Wait()
-	for par := 0; par < NPAR; par++ {
-		values, offset, err := db.Fetch(par, queue)
+	for i := 0; i < NPAR; i++ {
+		par := fmt.Sprintf("%d", i)
+		values, offset, err := db.Fetch(par + queue)
 		if err != nil {
 			panic(err)
 		}
@@ -50,7 +51,7 @@ func TestQueue(t *testing.T) {
 		}
 
 		// without commit
-		values, offset, err = db.Fetch(par, queue)
+		values, offset, err = db.Fetch(par + queue)
 		if err != nil {
 			panic(err)
 		}
@@ -59,13 +60,13 @@ func TestQueue(t *testing.T) {
 				t.Fatalf("expect %d, got %s", i, v)
 			}
 		}
-		if err := db.Commit(par, queue, offset); err != nil {
+		if err := db.Commit(par+queue, offset); err != nil {
 			t.Fatal(err)
 		}
 
 		lastlen := len(values)
 		// without commit
-		values, offset, err = db.Fetch(par, queue)
+		values, offset, err = db.Fetch(par + queue)
 		if err != nil {
 			panic(err)
 		}
