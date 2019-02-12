@@ -46,9 +46,9 @@ type Queue struct {
 	session *gocql.Session
 
 	// cache index of queue
-	c  *cache.Cache
-	q  []*Message // keep SEGMENT_SIZE latest messages
-	mu *sync.Mutex
+	c    *cache.Cache
+	qMap map[string][]*Message // keep SEGMENT_SIZE latest messages
+	mu   *sync.Mutex
 }
 
 // connect creates a new session to cassandra, this function will keep retry
@@ -89,7 +89,7 @@ func connect(seeds []string, keyspace string) (*gocql.Session, error) {
 func NewQueue(seeds []string, ks string) (*Queue, error) {
 	var err error
 	me := &Queue{}
-	me.q = make([]*Message, 0)
+	me.qMap = make(map[string][]*Message, 0)
 	me.mu = &sync.Mutex{}
 	me.session, err = connect(seeds, ks)
 	if err != nil {
@@ -114,17 +114,24 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 	var lastOffset int64
 
 	me.mu.Lock()
-	if len(me.q) > 0 {
+	if _, ok := me.qMap[queue]; !ok {
+		me.qMap[queue] = make([]*Message, 0)
+	}
+
+	if len(me.qMap[queue]) > 0 {
 		// init offset must between with first offset and last offset
-		firstOffset := me.q[0].offset
+		firstOffset := me.qMap[queue][0].offset
 		if firstOffset <= initOffset {
-			for _, m := range me.q {
+			for _, m := range me.qMap[queue] {
 				if m.offset > initOffset {
 					valueArr = append(valueArr, m.value)
 					lastOffset = m.offset
 				}
 			}
 		}
+
+		// clear queue to free memory
+		me.qMap[queue] = make([]*Message, 0)
 	}
 	me.mu.Unlock()
 
@@ -216,9 +223,13 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 	}
 
 	me.mu.Lock()
-	me.q = append(me.q, &Message{value: value, offset: offset})
-	if len(me.q) > SEGMENT_SIZE {
-		me.q = me.q[len(me.q)-SEGMENT_SIZE:]
+	if _, ok := me.qMap[queue]; !ok {
+		me.qMap[queue] = make([]*Message, 0)
+	}
+
+	me.qMap[queue] = append(me.qMap[queue], &Message{value: value, offset: offset})
+	if len(me.qMap[queue]) > SEGMENT_SIZE {
+		me.qMap[queue] = me.qMap[queue][len(me.qMap[queue])-SEGMENT_SIZE:]
 	}
 	me.mu.Unlock()
 
