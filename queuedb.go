@@ -1,6 +1,6 @@
 // This package lets you store queues to cassandra
 // before using this package, you must setup the cassandra keyspace using this cqlsh script
-//   create KEYSPACE_NAME keyspace with replication={'class':'SimpleStrategy','replication_factor':1};
+//   create keyspace KEYSPACE_NAME with replication={'class':'SimpleStrategy','replication_factor':1};
 //   create table queues(queue ascii,segment bigint,offset bigint,data blob,primary key((queue, segment),offset)) with clustering order by (offset asc);
 //   create table offsets(queue ascii,consumer_offset bigint,producer_offset bigint,primary key (queue));
 //
@@ -8,10 +8,12 @@ package smq
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/gocql/gocql"
 	cache "github.com/hashicorp/golang-lru"
 	"github.com/subiz/errors"
-	"time"
 )
 
 const (
@@ -26,11 +28,16 @@ const (
 	// and so on.
 	// segment keeps cassandra partition small and one consumed, whole segment will be
 	// deleted leaving much less tombstone than deleting individual message.
-	tblQueues  = "queues"
+	tblQueues = "queues"
 )
 
 // SEGMENT_SIZE is maxinum number of messages inside a segment
 const SEGMENT_SIZE = 1000
+
+type Message struct {
+	value  []byte
+	offset int64
+}
 
 // Queue is used to persist (load) queue messages from (to) cassandra database
 // This struct is not thread-safe, you must handle concurrency yourself
@@ -39,7 +46,9 @@ type Queue struct {
 	session *gocql.Session
 
 	// cache index of queue
-	l       *cache.Cache
+	c  *cache.Cache
+	q  []*Message // keep SEGMENT_SIZE latest messages
+	mu *sync.Mutex
 }
 
 // connect creates a new session to cassandra, this function will keep retry
@@ -80,11 +89,13 @@ func connect(seeds []string, keyspace string) (*gocql.Session, error) {
 func NewQueue(seeds []string, ks string) (*Queue, error) {
 	var err error
 	me := &Queue{}
+	me.q = make([]*Message, 0)
+	me.mu = &sync.Mutex{}
 	me.session, err = connect(seeds, ks)
 	if err != nil {
 		return nil, err
 	}
-	me.l, err = cache.New(128000)
+	me.c, err = cache.New(128000)
 	if err != nil {
 		return nil, err
 	}
@@ -94,20 +105,41 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 // Fetch loads next messages from the last committed offset
 // this method return maximum SEGMENT_SIZE messages and offset of the
 func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
-	initoffset, maxoffset, err := me.readIndex(queue)
+	initOffset, maxOffset, err := me.readIndex(queue)
 	if err != nil {
 		return nil, -1, err
 	}
 
-	segment := initoffset / SEGMENT_SIZE
+	valueArr := make([][]byte, 0)
+	var lastOffset int64
+
+	me.mu.Lock()
+	if len(me.q) > 0 {
+		// init offset must between with first offset and last offset
+		firstOffset := me.q[0].offset
+		if firstOffset <= initOffset {
+			for _, m := range me.q {
+				if m.offset > initOffset {
+					valueArr = append(valueArr, m.value)
+					lastOffset = m.offset
+				}
+			}
+		}
+	}
+	me.mu.Unlock()
+
+	if len(valueArr) > 0 {
+		return valueArr, lastOffset, nil
+	}
+
+	segment := initOffset / SEGMENT_SIZE
 	query := `SELECT offset, data FROM ` + tblQueues +
 		` WHERE queue=? AND segment=? AND offset>? ORDER BY offset ASC LIMIT ?`
 
-	valueArr := make([][]byte, 0)
 	value := make([]byte, 0)
-	var lastoffset int64
-	iter := me.session.Query(query, queue, segment, initoffset, SEGMENT_SIZE).Iter()
-	for iter.Scan(&lastoffset, &value) {
+
+	iter := me.session.Query(query, queue, segment, initOffset, SEGMENT_SIZE).Iter()
+	for iter.Scan(&lastOffset, &value) {
 		valueArr = append(valueArr, value)
 		value = make([]byte, 0)
 	}
@@ -116,10 +148,10 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 	}
 
 	// reading next segment if the current segment is out of message
-	if len(valueArr) < SEGMENT_SIZE && lastoffset < maxoffset {
-		iter := me.session.Query(query, queue, segment+1, lastoffset,
+	if len(valueArr) < SEGMENT_SIZE && lastOffset < maxOffset {
+		iter := me.session.Query(query, queue, segment+1, lastOffset,
 			SEGMENT_SIZE-len(valueArr)).Iter()
-		for iter.Scan(&lastoffset, &value) {
+		for iter.Scan(&lastOffset, &value) {
 			valueArr = append(valueArr, value)
 			value = make([]byte, 0)
 		}
@@ -128,15 +160,15 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 		}
 	}
 
-	return valueArr, lastoffset, nil
+	return valueArr, lastOffset, nil
 }
 
 // readIndex reads queue consumer offset and producer offset
 // SIDE EFFECTS:
 // + this function also updates queue cache to latest value
 func (me *Queue) readIndex(queue string) (csm, pro int64, err error) {
-	csmi, csmok := me.l.Get("consumer-" + queue)
-	proi, prook := me.l.Get("producer-" + queue)
+	csmi, csmok := me.c.Get("consumer-" + queue)
+	proi, prook := me.c.Get("producer-" + queue)
 	if csmok && prook {
 		return csmi.(int64), proi.(int64), nil
 	}
@@ -146,15 +178,15 @@ func (me *Queue) readIndex(queue string) (csm, pro int64, err error) {
 
 	err = me.session.Query(query, queue).Scan(&csm, &pro)
 	if err != nil && err.Error() == gocql.ErrNotFound.Error() {
-		me.l.Add("consumer-"+queue, int64(0))
-		me.l.Add("producer-"+queue, int64(0))
+		me.c.Add("consumer-"+queue, int64(0))
+		me.c.Add("producer-"+queue, int64(0))
 		return 0, 0, nil
 	}
 	if err != nil {
 		return -1, -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
-	me.l.Add("consumer-"+queue, csm)
-	me.l.Add("producer-"+queue, pro)
+	me.c.Add("consumer-"+queue, csm)
+	me.c.Add("producer-"+queue, pro)
 	return csm, pro, nil
 }
 
@@ -173,7 +205,7 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 	if err != nil {
 		return -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
-	me.l.Add("producer-"+queue, offset)
+	me.c.Add("producer-"+queue, offset)
 
 	query := "INSERT INTO " + tblQueues + "(queue, segment, offset, data) " +
 		"VALUES(?,?,?,?)"
@@ -182,6 +214,13 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 	if err != nil {
 		return -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
+
+	me.mu.Lock()
+	me.q = append(me.q, &Message{value: value, offset: offset})
+	if len(me.q) > SEGMENT_SIZE {
+		me.q = me.q[len(me.q)-SEGMENT_SIZE:]
+	}
+	me.mu.Unlock()
 
 	return offset, nil
 }
@@ -207,6 +246,6 @@ func (me *Queue) Commit(queue string, offset int64) error {
 		return errors.Wrap(err, 500, errors.E_database_error)
 	}
 
-	me.l.Add("consumer-"+queue, offset)
+	me.c.Add("consumer-"+queue, offset)
 	return nil
 }
