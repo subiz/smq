@@ -105,9 +105,19 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 // Fetch loads next messages from the last committed offset
 // this method return maximum SEGMENT_SIZE messages and offset of the
 func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
-	initOffset, maxOffset, err := me.readIndex(queue)
-	if err != nil {
-		return nil, -1, err
+	var initOffset, maxOffset int64
+	// wait for new messages (timeout: 60 seconds)
+	start := time.Now()
+	for time.Since(start) < 60*time.Second {
+		var err error
+		initOffset, maxOffset, err = me.readIndex(queue)
+		if err != nil {
+			return nil, -1, err
+		}
+		if initOffset < maxOffset {
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
 
 	valueArr := make([][]byte, 0)
