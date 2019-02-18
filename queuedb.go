@@ -137,16 +137,16 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 					lastOffset = m.offset
 				}
 			}
-		}
 
-		// clear queue to free memory
-		me.qMap[queue] = make([]*Message, 0)
+			// free memory
+			// !! do not reset to empty queue
+			me.qMap[queue] = me.qMap[queue][len(me.qMap[queue])-1:]
+
+			me.mu.Unlock()
+			return valueArr, lastOffset, nil
+		}
 	}
 	me.mu.Unlock()
-
-	if len(valueArr) > 0 {
-		return valueArr, lastOffset, nil
-	}
 
 	segment := initOffset / SEGMENT_SIZE
 	query := `SELECT offset, data FROM ` + tblQueues +
