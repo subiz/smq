@@ -49,6 +49,7 @@ type Queue struct {
 	c    *cache.Cache
 	qMap map[string][]*Message // keep SEGMENT_SIZE latest messages
 	mu   *sync.Mutex
+	subs map[string][]func()
 }
 
 // connect creates a new session to cassandra, this function will keep retry
@@ -92,6 +93,7 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 	me.qMap = make(map[string][]*Message, 0)
 	me.mu = &sync.Mutex{}
 	me.session, err = connect(seeds, ks)
+	me.subs = make(map[string][]func())
 	if err != nil {
 		return nil, err
 	}
@@ -102,22 +104,19 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 	return me, err
 }
 
+func (me *Queue) SubscribeForNewEvent(queue string, cb func()) {
+	me.mu.Lock()
+	oldqueuesubs, _ := me.subs[queue]
+	me.subs[queue] = append(oldqueuesubs, cb)
+	me.mu.Unlock()
+}
+
 // Fetch loads next messages from the last committed offset
 // this method return maximum SEGMENT_SIZE messages and offset of the
 func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
-	var initOffset, maxOffset int64
-	// wait for new messages (timeout: 60 seconds)
-	start := time.Now()
-	for time.Since(start) < 60*time.Second {
-		var err error
-		initOffset, maxOffset, err = me.readIndex(queue)
-		if err != nil {
-			return nil, -1, err
-		}
-		if initOffset < maxOffset {
-			break
-		}
-		time.Sleep(1 * time.Second)
+	initOffset, maxOffset, err := me.readIndex(queue)
+	if err != nil {
+		return nil, -1, err
 	}
 
 	valueArr := make([][]byte, 0)
@@ -241,6 +240,12 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 	if len(me.qMap[queue]) > SEGMENT_SIZE {
 		me.qMap[queue] = me.qMap[queue][len(me.qMap[queue])-SEGMENT_SIZE:]
 	}
+
+	// notify all subscribers
+	for _, f := range me.subs[queue] {
+		go f()
+	}
+
 	me.mu.Unlock()
 
 	return offset, nil
