@@ -48,8 +48,8 @@ type Queue struct {
 	// cache index of queue
 	c    *cache.Cache
 	qMap map[string][]*Message // keep SEGMENT_SIZE latest messages
+
 	mu   *sync.Mutex
-	subs map[string][]func()
 }
 
 // connect creates a new session to cassandra, this function will keep retry
@@ -93,7 +93,6 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 	me.qMap = make(map[string][]*Message, 0)
 	me.mu = &sync.Mutex{}
 	me.session, err = connect(seeds, ks)
-	me.subs = make(map[string][]func())
 	if err != nil {
 		return nil, err
 	}
@@ -102,13 +101,6 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 		return nil, err
 	}
 	return me, err
-}
-
-func (me *Queue) SubscribeForNewEvent(queue string, cb func()) {
-	me.mu.Lock()
-	oldqueuesubs, _ := me.subs[queue]
-	me.subs[queue] = append(oldqueuesubs, cb)
-	me.mu.Unlock()
 }
 
 // Fetch loads next messages from the last committed offset
@@ -150,11 +142,11 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 
 	segment := initOffset / SEGMENT_SIZE
 	query := `SELECT offset, data FROM ` + tblQueues +
-		` WHERE queue=? AND segment=? AND offset>? ORDER BY offset ASC LIMIT ?`
+		` WHERE queue=? AND segment=? AND offset>? AND offset<=? ORDER BY offset ASC LIMIT ?`
 
 	value := make([]byte, 0)
 
-	iter := me.session.Query(query, queue, segment, initOffset, SEGMENT_SIZE).Iter()
+	iter := me.session.Query(query, queue, segment, initOffset, maxOffset, SEGMENT_SIZE).Iter()
 	for iter.Scan(&lastOffset, &value) {
 		valueArr = append(valueArr, value)
 		value = make([]byte, 0)
@@ -166,7 +158,7 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 	// reading next segment if the current segment is out of message
 	if len(valueArr) < SEGMENT_SIZE && lastOffset < maxOffset {
 		iter := me.session.Query(query, queue, segment+1, lastOffset,
-			SEGMENT_SIZE-len(valueArr)).Iter()
+			maxOffset, SEGMENT_SIZE-len(valueArr)).Iter()
 		for iter.Scan(&lastOffset, &value) {
 			valueArr = append(valueArr, value)
 			value = make([]byte, 0)
@@ -239,11 +231,6 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 	me.qMap[queue] = append(me.qMap[queue], &Message{value: value, offset: offset})
 	if len(me.qMap[queue]) > SEGMENT_SIZE {
 		me.qMap[queue] = me.qMap[queue][len(me.qMap[queue])-SEGMENT_SIZE:]
-	}
-
-	// notify all subscribers
-	for _, f := range me.subs[queue] {
-		go f()
 	}
 
 	me.mu.Unlock()
