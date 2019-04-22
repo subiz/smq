@@ -24,9 +24,14 @@
 #   go-tests = true
 #   unused-packages = true
 
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/gocql/gocql"
+
 [[constraint]]
   name = "github.com/hashicorp/golang-lru"
-  version = "0.5.0"
+  version = "0.5.1"
 
 [[constraint]]
   branch = "master"

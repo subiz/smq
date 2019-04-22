@@ -3,7 +3,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fe263ed63544c9cb65bbbcfa17dbe48eb7dfb1203e9af20409e36a46b1d98baa"
+  digest = "1:a6036dee336500d3d10b5aab7ce57da764281c095f0cee0a3111a7bf108c2042"
   name = "github.com/gocql/gocql"
   packages = [
     ".",
@@ -12,15 +12,15 @@
     "internal/streams",
   ]
   pruneopts = "UT"
-  revision = "8516aabb0f993b6c0d88b66d46e54a90d622671d"
+  revision = "59a610c947c50cbbf9efa4d772be1ce8d1a215db"
 
 [[projects]]
-  branch = "master"
-  digest = "1:4a0c6bb4805508a6287675fac876be2ac1182539ca8a32468d8128882e9d5009"
+  digest = "1:e4f5819333ac698d294fe04dbf640f84719658d5c7ce195b10060cc37292ce79"
   name = "github.com/golang/snappy"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+  revision = "2a8bb927dd31d8daada140a5d09578521ce5c36a"
+  version = "v0.0.1"
 
 [[projects]]
   branch = "master"
@@ -31,19 +31,19 @@
   revision = "e80d13ce29ede4452c43dea11e79b9bc8a15b478"
 
 [[projects]]
-  digest = "1:8ec8d88c248041a6df5f6574b87bc00e7e0b493881dad2e7ef47b11dc69093b5"
+  digest = "1:d15ee511aa0f56baacc1eb4c6b922fa1c03b38413b6be18166b996d82a0156ea"
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
     "simplelru",
   ]
   pruneopts = "UT"
-  revision = "20f1fb78b0740ba8c3cb143a61e86ba5c8669768"
-  version = "v0.5.0"
+  revision = "7087cb70de9f7a8bc0a10c375cb0d2280a8edf9c"
+  version = "v0.5.1"
 
 [[projects]]
   branch = "master"
-  digest = "1:84a5a2b67486d5d67060ac393aa255d05d24ed5ee41daecd5635ec22657b6492"
+  digest = "1:df495c9184b4e6cbb9d55652236dbcbe72c65a1c8b6469da50722628cea474e7"
   name = "github.com/mailru/easyjson"
   packages = [
     "buffer",
@@ -51,15 +51,15 @@
     "jwriter",
   ]
   pruneopts = "UT"
-  revision = "60711f1a8329503b04e1c88535f419d0bb440bff"
+  revision = "1ea4449da9834f4d333f1cc461c374aea217d249"
 
 [[projects]]
   branch = "master"
-  digest = "1:863bc962342e813063d07df17aef61079127bc7118fc767360fc1320847e168f"
+  digest = "1:e789101620aaabaf8edce2bdbb8941a35dcd9db327fbd302dad3543b3e8cc556"
   name = "github.com/subiz/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "09cb44817ac5c10c19fd28a9622d8b5c23558bbf"
+  revision = "3e282403882f31bf9c5982c540d075c5ef41efba"
 
 [[projects]]
   digest = "1:2d1fbdc6777e5408cabeb02bf336305e724b925ff4546ded0fa8715a7267922a"
