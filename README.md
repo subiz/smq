@@ -13,17 +13,17 @@ Downside: slow, no build-in pull or push mechanic
 
 ### Send message to queue
 ```go
-	// send "hello", "world" to queue "myqueue"
-	offset, _ := db.Enqueue("myqueue", []byte{"hello"})
-	fmt.Println(offset) // 1
+// send "hello", "world" to queue "myqueue"
+offset, _ := db.Enqueue("myqueue", []byte{"hello"})
+fmt.Println(offset) // 1
 
-	offset, _ = db.Enqueue("myqueue", []byte{"world"})
-	fmt.Println(offset) // 2
+offset, _ = db.Enqueue("myqueue", []byte{"world"})
+fmt.Println(offset) // 2
 
-	// read from queue
-	values, offset, err := db.Fetch("myqueue")
-	fmt.Println(values, offset) // [][]byte{"hello", "world"}, 2
+// read from queue
+values, offset, err := db.Fetch("myqueue")
+fmt.Println(values, offset) // [][]byte{"hello", "world"}, 2
 
-	// commit
-	db.Commit("myqueue", 2)
+// commit
+db.Commit("myqueue", 2)
 ```
