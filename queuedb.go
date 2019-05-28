@@ -49,7 +49,7 @@ type Queue struct {
 	c    *cache.Cache
 	qMap map[string][]*Message // keep SEGMENT_SIZE latest messages
 
-	mu   *sync.Mutex
+	mu *sync.Mutex
 }
 
 // connect creates a new session to cassandra, this function will keep retry
@@ -106,7 +106,7 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 // Fetch loads next messages from the last committed offset
 // this method return maximum SEGMENT_SIZE messages and offset of the
 func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
-	initOffset, maxOffset, err := me.readIndex(queue)
+	initOffset, maxOffset, err := me.ReadIndex(queue)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -171,10 +171,10 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 	return valueArr, lastOffset, nil
 }
 
-// readIndex reads queue consumer offset and producer offset
+// ReadIndex reads queue consumer offset and producer offset
 // SIDE EFFECTS:
 // + this function also updates queue cache to latest value
-func (me *Queue) readIndex(queue string) (csm, pro int64, err error) {
+func (me *Queue) ReadIndex(queue string) (csm, pro int64, err error) {
 	csmi, csmok := me.c.Get("consumer-" + queue)
 	proi, prook := me.c.Get("producer-" + queue)
 	if csmok && prook {
@@ -201,7 +201,7 @@ func (me *Queue) readIndex(queue string) (csm, pro int64, err error) {
 // Enqueue pushs new messages to queue, it returns messages offset
 // TODO: should convert to batch to protect data integrity
 func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
-	_, offset, err := me.readIndex(queue)
+	_, offset, err := me.ReadIndex(queue)
 	if err != nil {
 		return -1, err
 	}
@@ -242,7 +242,7 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 // its now safe for Queue to delete lesser offset messages
 // this function ignore if user try to commit old messages
 func (me *Queue) Commit(queue string, offset int64) error {
-	csm, pro, err := me.readIndex(queue)
+	csm, pro, err := me.ReadIndex(queue)
 	if err != nil {
 		return err
 	}
