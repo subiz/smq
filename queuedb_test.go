@@ -17,6 +17,7 @@ func TestQueue(t *testing.T) {
 
 	queue := fmt.Sprintf("%d", time.Now().UnixNano())
 
+	// insert data into NPAR queues
 	wg := &sync.WaitGroup{}
 	for par := 0; par < NPAR; par++ {
 		wg.Add(1)
@@ -31,34 +32,35 @@ func TestQueue(t *testing.T) {
 				}
 			}
 
-			if lastoffset != 1500 {
-				t.Errorf("%s: should be 1000, got %d", par, lastoffset)
+			if lastoffset != 1499 {
+				t.Errorf("%s: should be 1499, got %d", par, lastoffset)
 			}
 		}(fmt.Sprintf("%d", par))
 	}
-
 	wg.Wait()
+
 	for i := 0; i < NPAR; i++ {
 		par := fmt.Sprintf("%d", i)
-		values, offset, err := db.Fetch(par + queue)
+		values, offset, err := db.Fetch(par+queue, -1)
 		if err != nil {
 			panic(err)
 		}
+
+		// verify message's integrity
 		for i, v := range values {
 			if string(v) != fmt.Sprintf("%d", i) {
 				t.Fatalf("expect %d, got %s", i, v)
 			}
 		}
 
-		// without commit
-		values, offset, err = db.Fetch(par + queue)
+		// test commit
+		_, offset, err = db.Fetch(par+queue, -1)
 		if err != nil {
 			panic(err)
 		}
-		for i, v := range values {
-			if string(v) != fmt.Sprintf("%d", i) {
-				t.Fatalf("expect %d, got %s", i, v)
-			}
+
+		if offset != SEGMENT_SIZE-1 {
+			t.Fatalf("offset should be %d, got %d", SEGMENT_SIZE-1, offset)
 		}
 		if err := db.Commit(par+queue, offset); err != nil {
 			t.Fatal(err)
@@ -66,12 +68,12 @@ func TestQueue(t *testing.T) {
 
 		lastlen := len(values)
 		// without commit
-		values, offset, err = db.Fetch(par + queue)
+		values, offset, err = db.Fetch(par+queue, -1)
 		if err != nil {
 			panic(err)
 		}
-		if offset != 1500 {
-			t.Fatalf("expect 1500, got %d", offset)
+		if offset != 1499 {
+			t.Fatalf("expect 1499, got %d", offset)
 		}
 		for i, v := range values {
 			if string(v) != fmt.Sprintf("%d", i+lastlen) {
