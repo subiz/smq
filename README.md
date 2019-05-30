@@ -21,7 +21,7 @@ offset, _ = db.Enqueue("myqueue", []byte{"world"})
 fmt.Println(offset) // 2
 
 // read from queue
-values, offset, err := db.Fetch("myqueue")
+values, offset, err := db.Fetch("myqueue", 100)
 fmt.Println(values, offset) // [][]byte{"hello", "world"}, 2
 
 // commit
