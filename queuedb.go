@@ -8,7 +8,6 @@ package smq
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -46,10 +45,7 @@ type Queue struct {
 	session *gocql.Session
 
 	// cache index of queue
-	c    *cache.Cache
-	qMap map[string][]*Message // keep SEGMENT_SIZE latest messages
-
-	mu *sync.Mutex
+	c *cache.Cache
 }
 
 // connect creates a new session to cassandra, this function will keep retry
@@ -73,7 +69,6 @@ func connect(seeds []string, keyspace string) (*gocql.Session, error) {
 		time.Sleep(5 * time.Second)
 	}
 
-	fmt.Println("CONNECTED TO ", seeds)
 	defer defaultSession.Close()
 
 	cluster.Keyspace = keyspace
@@ -90,8 +85,6 @@ func connect(seeds []string, keyspace string) (*gocql.Session, error) {
 func NewQueue(seeds []string, ks string) (*Queue, error) {
 	var err error
 	me := &Queue{}
-	me.qMap = make(map[string][]*Message, 0)
-	me.mu = &sync.Mutex{}
 	me.session, err = connect(seeds, ks)
 	if err != nil {
 		return nil, err
@@ -104,49 +97,39 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 }
 
 // Fetch loads next messages from the last committed offset
-// this method return maximum SEGMENT_SIZE messages and offset of the
-func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
-	initOffset, maxOffset, err := me.ReadIndex(queue)
+// this method returns maximum SEGMENT_SIZE messages and offset of the
+// last message (or -1 for empty queue, or latest committed offset when
+// no messages found)
+// limit must less than SEGMENT_SIZE
+func (me *Queue) Fetch(queue string, limit int) ([][]byte, int64, error) {
+	if limit < 0 || SEGMENT_SIZE < limit { // make sure limit inside
+		limit = SEGMENT_SIZE
+	}
+
+	initOffset, _, err := me.ReadIndex(queue) // last commited offset
 	if err != nil {
 		return nil, -1, err
 	}
 
 	valueArr := make([][]byte, 0)
-	var lastOffset int64
+	var lastOffset = initOffset
 
-	me.mu.Lock()
-	if _, ok := me.qMap[queue]; !ok {
-		me.qMap[queue] = make([]*Message, 0)
-	}
-
-	if len(me.qMap[queue]) > 0 {
-		// init offset must between with first offset and last offset
-		firstOffset := me.qMap[queue][0].offset
-		if firstOffset <= initOffset {
-			for _, m := range me.qMap[queue] {
-				if m.offset > initOffset {
-					valueArr = append(valueArr, m.value)
-					lastOffset = m.offset
-				}
-			}
-
-			// free memory
-			// !! do not reset to empty queue
-			me.qMap[queue] = me.qMap[queue][len(me.qMap[queue])-1:]
-
-			me.mu.Unlock()
-			return valueArr, lastOffset, nil
+	segment := int64(-1)
+	if initOffset < 0 {
+		initOffset = -1
+	} else {
+		segment = initOffset / SEGMENT_SIZE // initial segment
+		// move to the next segment if we have reached the end of a segment
+		if (lastOffset+1)%SEGMENT_SIZE == 0 {
+			segment++
 		}
 	}
-	me.mu.Unlock()
 
-	segment := initOffset / SEGMENT_SIZE
 	query := `SELECT offset, data FROM ` + tblQueues +
-		` WHERE queue=? AND segment=? AND offset>? AND offset<=? ORDER BY offset ASC LIMIT ?`
+		` WHERE queue=? AND segment=? AND offset>? ORDER BY offset ASC LIMIT ?`
 
 	value := make([]byte, 0)
-
-	iter := me.session.Query(query, queue, segment, initOffset, maxOffset, SEGMENT_SIZE).Iter()
+	iter := me.session.Query(query, queue, segment, lastOffset, limit).Iter()
 	for iter.Scan(&lastOffset, &value) {
 		valueArr = append(valueArr, value)
 		value = make([]byte, 0)
@@ -156,9 +139,10 @@ func (me *Queue) Fetch(queue string) ([][]byte, int64, error) {
 	}
 
 	// reading next segment if the current segment is out of message
-	if len(valueArr) < SEGMENT_SIZE && lastOffset < maxOffset {
+	// (reached end of the current segment
+	if len(valueArr) < limit && (lastOffset+1)%SEGMENT_SIZE == 0 {
 		iter := me.session.Query(query, queue, segment+1, lastOffset,
-			maxOffset, SEGMENT_SIZE-len(valueArr)).Iter()
+			limit-len(valueArr)).Iter()
 		for iter.Scan(&lastOffset, &value) {
 			valueArr = append(valueArr, value)
 			value = make([]byte, 0)
@@ -183,16 +167,16 @@ func (me *Queue) ReadIndex(queue string) (csm, pro int64, err error) {
 
 	query := "SELECT consumer_offset, producer_offset FROM " + tblOffsets +
 		" WHERE queue=?"
-
 	err = me.session.Query(query, queue).Scan(&csm, &pro)
 	if err != nil && err.Error() == gocql.ErrNotFound.Error() {
-		me.c.Add("consumer-"+queue, int64(0))
-		me.c.Add("producer-"+queue, int64(0))
-		return 0, 0, nil
+		me.c.Add("consumer-"+queue, int64(-1))
+		me.c.Add("producer-"+queue, int64(-1))
+		return -1, -1, nil
 	}
 	if err != nil {
 		return -1, -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
+
 	me.c.Add("consumer-"+queue, csm)
 	me.c.Add("producer-"+queue, pro)
 	return csm, pro, nil
@@ -207,7 +191,6 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 	}
 
 	offset++
-
 	err = me.session.Query("INSERT INTO "+tblOffsets+
 		" (queue, producer_offset) VALUES(?,?)", queue, offset).Exec()
 	if err != nil {
@@ -223,18 +206,6 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 		return -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
 
-	me.mu.Lock()
-	if _, ok := me.qMap[queue]; !ok {
-		me.qMap[queue] = make([]*Message, 0)
-	}
-
-	me.qMap[queue] = append(me.qMap[queue], &Message{value: value, offset: offset})
-	if len(me.qMap[queue]) > SEGMENT_SIZE {
-		me.qMap[queue] = me.qMap[queue][len(me.qMap[queue])-SEGMENT_SIZE:]
-	}
-
-	me.mu.Unlock()
-
 	return offset, nil
 }
 
@@ -242,15 +213,12 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 // its now safe for Queue to delete lesser offset messages
 // this function ignore if user try to commit old messages
 func (me *Queue) Commit(queue string, offset int64) error {
-	csm, pro, err := me.ReadIndex(queue)
+	csm, _, err := me.ReadIndex(queue)
 	if err != nil {
 		return err
 	}
 	if offset < csm {
 		return nil
-	}
-	if pro < offset {
-		offset = pro
 	}
 
 	err = me.session.Query("INSERT INTO "+tblOffsets+
