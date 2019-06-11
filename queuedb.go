@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/gocql/gocql"
-	cache "github.com/hashicorp/golang-lru"
 	"github.com/subiz/errors"
 )
 
@@ -43,9 +42,6 @@ type Message struct {
 type Queue struct {
 	// hold connection to casasndra cluster
 	session *gocql.Session
-
-	// cache index of queue
-	c *cache.Cache
 }
 
 // connect creates a new session to cassandra, this function will keep retry
@@ -86,10 +82,6 @@ func NewQueue(seeds []string, ks string) (*Queue, error) {
 	var err error
 	me := &Queue{}
 	me.session, err = connect(seeds, ks)
-	if err != nil {
-		return nil, err
-	}
-	me.c, err = cache.New(128000)
 	if err != nil {
 		return nil, err
 	}
@@ -159,26 +151,15 @@ func (me *Queue) Fetch(queue string, limit int) ([][]byte, int64, error) {
 // SIDE EFFECTS:
 // + this function also updates queue cache to latest value
 func (me *Queue) ReadIndex(queue string) (csm, pro int64, err error) {
-	csmi, csmok := me.c.Get("consumer-" + queue)
-	proi, prook := me.c.Get("producer-" + queue)
-	if csmok && prook {
-		return csmi.(int64), proi.(int64), nil
-	}
-
 	query := "SELECT consumer_offset, producer_offset FROM " + tblOffsets +
 		" WHERE queue=?"
 	err = me.session.Query(query, queue).Scan(&csm, &pro)
 	if err != nil && err.Error() == gocql.ErrNotFound.Error() {
-		me.c.Add("consumer-"+queue, int64(-1))
-		me.c.Add("producer-"+queue, int64(-1))
 		return -1, -1, nil
 	}
 	if err != nil {
 		return -1, -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
-
-	me.c.Add("consumer-"+queue, csm)
-	me.c.Add("producer-"+queue, pro)
 	return csm, pro, nil
 }
 
@@ -196,7 +177,6 @@ func (me *Queue) Enqueue(queue string, value []byte) (int64, error) {
 	if err != nil {
 		return -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
-	me.c.Add("producer-"+queue, offset)
 
 	query := "INSERT INTO " + tblQueues + "(queue, segment, offset, data) " +
 		"VALUES(?,?,?,?)"
