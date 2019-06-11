@@ -160,6 +160,15 @@ func (me *Queue) ReadIndex(queue string) (csm, pro int64, err error) {
 	if err != nil {
 		return -1, -1, errors.Wrap(err, 500, errors.E_database_error)
 	}
+
+	// auto correct producer offset if it is less than consumer offset
+	if csm > pro {
+		err = me.session.Query("INSERT INTO "+tblOffsets+
+			" (queue, producer_offset) VALUES(?,?)", queue, csm).Exec()
+		if err != nil {
+			return -1, -1, errors.Wrap(err, 500, errors.E_database_error)
+		}
+	}
 	return csm, pro, nil
 }
 
@@ -207,6 +216,5 @@ func (me *Queue) Commit(queue string, offset int64) error {
 		return errors.Wrap(err, 500, errors.E_database_error)
 	}
 
-	me.c.Add("consumer-"+queue, offset)
 	return nil
 }
